@@ -50,7 +50,11 @@ import {
   type LegendListRef,
   type MaintainScrollAtEndOptions,
 } from "@legendapp/list/react";
-import { type PendingApproval, type TimelineEntry } from "../../session-logic";
+import {
+  isProviderCapacityError,
+  type PendingApproval,
+  type TimelineEntry,
+} from "../../session-logic";
 import type { CodexArtifactTemplate } from "@t3tools/shared/codexArtifactTemplates";
 import { type ChatFileAttachment, type TurnDiffSummary } from "../../types";
 import {
@@ -230,6 +234,9 @@ interface MessagesTimelineProps {
   onCancelWorktreeSetup?: () => void;
   retryableWorkspacePreparationRunIds?: ReadonlySet<RunId>;
   onRetryWorkspacePreparation?: (runId: RunId) => void;
+  onRetryProviderError?: (runId: RunId) => void;
+  autoRetryCapacityErrors?: boolean;
+  onSetAutoRetryCapacityErrors?: (enabled: boolean) => void;
   onWorktreeSetupWorkLocally?: () => void;
   onOpenWorktreeSetupTerminal?: (terminalId: string) => void;
   isPreparingWorktree?: boolean;
@@ -344,6 +351,9 @@ const ConversationTimeline = memo(function ConversationTimeline({
   onCancelWorktreeSetup,
   retryableWorkspacePreparationRunIds = EMPTY_RUN_IDS,
   onRetryWorkspacePreparation,
+  onRetryProviderError,
+  autoRetryCapacityErrors: autoRetryCapacityErrorsProp,
+  onSetAutoRetryCapacityErrors: onSetAutoRetryCapacityErrorsProp,
   onWorktreeSetupWorkLocally,
   onOpenWorktreeSetupTerminal,
   isPreparingWorktree = false,
@@ -681,6 +691,48 @@ const ConversationTimeline = memo(function ConversationTimeline({
     worktreeSetup,
   });
   const rows = useStableRows(rawRows, listIdentityKey);
+  const [localAutoRetryCapacityErrors, setLocalAutoRetryCapacityErrors] = useState(false);
+  const autoRetryCapacityErrors = autoRetryCapacityErrorsProp ?? localAutoRetryCapacityErrors;
+  const onSetAutoRetryCapacityErrors =
+    onSetAutoRetryCapacityErrorsProp ?? setLocalAutoRetryCapacityErrors;
+  const autoRetryAttemptedRunIdsRef = useRef<Set<string>>(new Set());
+  const latestCapacityFailureRunId = (() => {
+    for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
+      const row = rows[rowIndex];
+      const entries =
+        row !== undefined && (row.kind === "work" || row.kind === "work-live")
+          ? row.groupedEntries
+          : [];
+      for (let entryIndex = entries.length - 1; entryIndex >= 0; entryIndex -= 1) {
+        const entry = entries[entryIndex];
+        const item = entry?.projectedItem?.item;
+        if (
+          item?.type === "error" &&
+          item.status === "failed" &&
+          item.runId !== null &&
+          isProviderCapacityError(item)
+        ) {
+          return item.runId;
+        }
+      }
+    }
+    return null;
+  })();
+  // Dispatches a retry after the timeline projects a new capacity failure while the toggle is on.
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- keeps the external orchestration command in step with a newly projected timeline failure.
+  useEffect(() => {
+    if (
+      !autoRetryCapacityErrors ||
+      latestCapacityFailureRunId === null ||
+      onRetryProviderError === undefined
+    ) {
+      return;
+    }
+    const attemptKey = `${listIdentityKey}:${latestCapacityFailureRunId}`;
+    if (autoRetryAttemptedRunIdsRef.current.has(attemptKey)) return;
+    autoRetryAttemptedRunIdsRef.current.add(attemptKey);
+    onRetryProviderError(latestCapacityFailureRunId);
+  }, [autoRetryCapacityErrors, latestCapacityFailureRunId, listIdentityKey, onRetryProviderError]);
   const matchedApprovalRequestIds = new Set<string>();
   for (const row of pendingApprovalRequestIds.size > 0 ? rows : []) {
     const entries =
@@ -1046,6 +1098,9 @@ const ConversationTimeline = memo(function ConversationTimeline({
     onCancelWorktreeSetup: onCancelWorktreeSetup ?? null,
     retryableWorkspacePreparationRunIds,
     onRetryWorkspacePreparation: onRetryWorkspacePreparation ?? null,
+    onRetryProviderError: onRetryProviderError ?? null,
+    autoRetryCapacityErrors,
+    onSetAutoRetryCapacityErrors,
     onWorktreeSetupWorkLocally: onWorktreeSetupWorkLocally ?? null,
     onOpenWorktreeSetupTerminal: onOpenWorktreeSetupTerminal ?? null,
     workGroupViewState,

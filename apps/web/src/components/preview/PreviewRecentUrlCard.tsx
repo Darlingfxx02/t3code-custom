@@ -25,7 +25,7 @@ export function PreviewRecentUrlCard({ threadRef, entry, onOpen, onRemove }: Pro
       <button
         type="button"
         onClick={onOpen}
-        className="flex w-full items-center gap-3 px-3 py-3 pr-10 text-left hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="flex w-full items-center gap-3 px-3 py-3 pr-10 text-left hover:bg-interactive-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <PreviewFaviconIcon threadRef={threadRef} url={entry.url} />
         <div className="flex min-w-0 flex-1 flex-col">

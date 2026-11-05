@@ -10,13 +10,14 @@ const base = {
 };
 
 describe("resolveComposerControlsOwnership", () => {
-  it("hides the chip at the default and lets the model picker answer composer.mode", () => {
+  it("keeps default permissions accessible in the overflow menu", () => {
     const result = resolveComposerControlsOwnership(base);
     expect(result).toMatchObject({
       accessDisplay: "hidden",
       showModeBlock: false,
       hiddenBlockIds: [],
-      pickerOwnsModeShortcut: true,
+      overflowShowsPermissions: true,
+      showOverflow: true,
     });
   });
 
@@ -25,7 +26,8 @@ describe("resolveComposerControlsOwnership", () => {
     expect(result).toMatchObject({
       accessDisplay: "label",
       showModeBlock: true,
-      pickerOwnsModeShortcut: false,
+      overflowShowsPermissions: false,
+      showOverflow: false,
     });
   });
 
@@ -37,10 +39,10 @@ describe("resolveComposerControlsOwnership", () => {
     });
     expect(result.hiddenBlockIds).toEqual(["mode"]);
     expect(result.overflowShowsPermissions).toBe(true);
-    expect(result.pickerOwnsModeShortcut).toBe(false);
+    expect(result.showOverflow).toBe(true);
   });
 
-  it("keeps the Plan toggle block at the default and leaves Permissions with the picker", () => {
+  it("keeps default permissions with the overflowed Plan toggle", () => {
     const result = resolveComposerControlsOwnership({
       ...base,
       planModeUiEnabled: true,
@@ -48,11 +50,11 @@ describe("resolveComposerControlsOwnership", () => {
     });
     expect(result.showModeBlock).toBe(true);
     expect(result.hiddenBlockIds).toEqual(["mode"]);
-    expect(result.overflowShowsPermissions).toBe(false);
-    expect(result.pickerOwnsModeShortcut).toBe(true);
+    expect(result.overflowShowsPermissions).toBe(true);
+    expect(result.showOverflow).toBe(true);
   });
 
-  it("overflows only the chip when the Plan toggle gives the overflow menu content", () => {
+  it("keeps permissions accessible when the chip and Plan toggle overflow", () => {
     const result = resolveComposerControlsOwnership({
       ...base,
       matchesDefault: false,
@@ -60,9 +62,8 @@ describe("resolveComposerControlsOwnership", () => {
       measuredHiddenBlockCount: 1,
     });
     expect(result.hiddenBlockIds).toEqual(["mode"]);
-    // Permissions stay in the model picker, which now answers composer.mode.
-    expect(result.overflowShowsPermissions).toBe(false);
-    expect(result.pickerOwnsModeShortcut).toBe(true);
+    expect(result.overflowShowsPermissions).toBe(true);
+    expect(result.showOverflow).toBe(true);
   });
 
   it("shows the non-default chip as an icon in the compacted row", () => {

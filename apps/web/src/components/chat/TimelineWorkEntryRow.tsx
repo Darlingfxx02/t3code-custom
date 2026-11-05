@@ -29,6 +29,7 @@ import {
   workEntryDisplayIndicatesToolFailure,
   workEntrySignalsSevereFailure,
   workLogEntryIsToolLike,
+  isProviderCapacityError,
 } from "../../session-logic";
 import ChatMarkdown from "../ChatMarkdown";
 import { ChatMarkdownAssetImage } from "./ChatMarkdownMedia";
@@ -126,7 +127,6 @@ export function ReasoningTraceContent({ entries }: { entries: ReadonlyArray<Time
       {entries.map((entry) => (
         <ChatMarkdown
           key={entry.id}
-          className="text-foreground"
           text={entry.detail ?? ""}
           cwd={ctx.markdownCwd}
           threadRef={ctx.threadRef ?? undefined}
@@ -175,7 +175,13 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
   const { workEntry, workspaceRoot, displayLabel } = props;
   const ctx = use(TimelineRowCtx);
   const { threadRef, onImageExpand, timestampFormat } = ctx;
-  const { retryableWorkspacePreparationRunIds, onRetryWorkspacePreparation } = ctx;
+  const {
+    retryableWorkspacePreparationRunIds,
+    onRetryWorkspacePreparation,
+    onRetryProviderError,
+    autoRetryCapacityErrors,
+    onSetAutoRetryCapacityErrors,
+  } = ctx;
   const threadTarget = useThreadReadTarget(workEntry, ctx.activeThreadEnvironmentId);
   const createdThread =
     workEntry.projectedItem?.item.type === "thread_created"
@@ -206,7 +212,76 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
       ? ctx.pendingApprovals.get(failureItem.requestId)
       : undefined;
   if (pendingApproval) return <TimelinePendingApprovalRow approval={pendingApproval} />;
-  if (failureItem?.type === "error" && failureItem.status === "failed") {
+  if (
+    failureItem?.type === "error" &&
+    (failureItem.status === "failed" || isProviderCapacityError(failureItem))
+  ) {
+    const capacity = isProviderCapacityError(failureItem);
+    if (capacity) {
+      const retryable = failureItem.failure.retryable !== false;
+      const retrying = failureItem.status === "running";
+      const recovered = failureItem.status === "completed";
+      const label = retrying
+        ? "Model at capacity · retrying automatically"
+        : recovered
+          ? "Model recovered"
+          : "Model at capacity";
+      return (
+        <WorkLogRow
+          data-v2-item-type="error"
+          data-v2-capacity-event="true"
+          data-v2-item-visibility={workEntry.projectedItem?.visibility}
+          wrapLabel
+          icon={<CircleAlertIcon className="size-4 text-warning" />}
+          label={<span className="text-sm font-medium text-warning">{label}</span>}
+          trailing={
+            <TimelineRowTimestamp
+              createdAt={workEntry.createdAt}
+              timestampFormat={timestampFormat}
+              alwaysVisible
+            />
+          }
+        >
+          <div className="ms-7 rounded-lg border border-warning/30 bg-warning/8 px-3 py-2 text-sm">
+            <p className="whitespace-pre-wrap break-words leading-relaxed text-foreground/85">
+              {retrying
+                ? "T3 will retry this request automatically."
+                : recovered
+                  ? "The selected model is available again."
+                  : "The selected model is busy. Try a different model or retry this request."}
+            </p>
+            {!retrying && !recovered && retryable && failureItem.runId !== null ? (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {onRetryProviderError ? (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    onClick={() => onRetryProviderError(failureItem.runId!)}
+                  >
+                    <RotateCcwIcon aria-hidden />
+                    Retry
+                  </Button>
+                ) : null}
+                {onSetAutoRetryCapacityErrors && onRetryProviderError ? (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="ghost"
+                    aria-pressed={autoRetryCapacityErrors}
+                    onClick={() => {
+                      onSetAutoRetryCapacityErrors(!autoRetryCapacityErrors);
+                    }}
+                  >
+                    {autoRetryCapacityErrors ? "Auto-retry on" : "Retry automatically"}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </WorkLogRow>
+      );
+    }
     const warning = failureItem.failure.class === "usage_limit";
     const resetAt = failureItem.failure.resetAt;
     // The reset time is the viewer's local time; naming the zone keeps it

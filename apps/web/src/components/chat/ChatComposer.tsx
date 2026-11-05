@@ -3183,7 +3183,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         if (isInsideRestingComposerControlScope(event.target)) return;
         composerMentionDragHandlers.onDrop(event);
       }}
-      className="mx-auto w-full min-w-0 max-w-(--chat-content-max-width)"
+      className="mx-auto w-full min-w-0 max-w-[calc(var(--chat-content-max-width)+2rem)]"
       data-chat-composer-form="true"
       {...threadContextDropTargetProps()}
     >
@@ -3265,7 +3265,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                 <button
                   type="button"
                   data-chat-composer-transition-actions="true"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-message-action text-message-action-foreground hover:bg-message-action-hover disabled:opacity-64"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-black hover:bg-white disabled:bg-white disabled:text-black"
                   disabled={collapsedComposerPrimaryActionDisabled}
                   aria-label={collapsedComposerPrimaryActionLabel}
                   onPointerDown={(event) => event.preventDefault()}

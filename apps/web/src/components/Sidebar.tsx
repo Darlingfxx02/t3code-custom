@@ -102,6 +102,7 @@ import { isTerminalFocused } from "../lib/terminalFocus";
 import { isModelPickerOpen } from "../modelPickerVisibility";
 import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
 import { isMacPlatform } from "~/lib/utils";
+import { showContextMenuFallback } from "../contextMenuFallback";
 import { readLocalApi } from "../localApi";
 import { configuredHostedAppUrl } from "../hostedPairing";
 import { useSidebarPendingFileDropStore } from "../sidebarPendingFileDropStore";
@@ -1267,11 +1268,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   });
   const handleProjectFolderContextMenu = useStableCallback(
     (group: SidebarProjectSnapshot, position: { x: number; y: number }) => {
-      const api = readLocalApi();
-      if (!api) return;
       void (async () => {
         const clicked = await settlePromise(() =>
-          api.contextMenu.show(
+          showContextMenuFallback(
             [
               { id: "new-thread", label: "New thread" },
               { id: "copy-path", label: "Copy path" },
@@ -2620,7 +2619,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
             ),
           ) ?? null;
         const clicked = await settlePromise(() =>
-          api.contextMenu.show(
+          showContextMenuFallback(
             buildThreadActionMenuItems({
               canOperate: readEnvironmentScope(
                 threadRef.environmentId,

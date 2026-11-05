@@ -1131,20 +1131,21 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
       </span>
     ) : null;
   const diff = latestRunDiff(thread);
+  const showBranchInMetaLine = variant !== "card" && thread.branch !== null;
   // Only the trailing icons would remain, so the row moves them to the title line instead.
   const metaLineEmpty =
-    !thread.branch &&
+    !showBranchInMetaLine &&
     !showsScratchMachine &&
     prBadge === null &&
     diff === null &&
     runningTerminalIds.length === 0;
   const metaLine = metaLineEmpty ? null : (
     <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-secondary-label text-xs">
-      {thread.branch ? (
+      {showBranchInMetaLine ? (
         <>
           <ThreadWorktreeIndicator thread={thread} />
           <span className="flex min-w-0 flex-1">
-            <MiddleTruncate value={thread.branch} showTitle={false} />
+            <MiddleTruncate value={thread.branch!} showTitle={false} />
           </span>
         </>
       ) : showsScratchMachine ? (
@@ -1495,7 +1496,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                           {/* Not a live region: a collapsed sidebar is inert, so
                             BackgroundThreadAnnouncer and the open thread's
                             timeline speak status changes instead. */}
-                          {topStatus.label}
+                          {status === "working" ? null : topStatus.label}
                           {status === "working" ? (
                             <span aria-hidden>
                               <WorkingDuration startedAt={resolveWorkingStartedAt(thread)} />
@@ -1573,13 +1574,22 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
               {props.sweepAction !== null ? dragDestination : null}
             </div>
             <div className="mt-1 flex min-w-0 items-center gap-1.5">
+              {thread.branch ? (
+                <GitBranchIcon aria-hidden className="size-3.5 shrink-0 text-foreground" />
+              ) : null}
               {title}
               {isRegeneratingTitle ? (
                 <span role="status" className="sr-only">
                   Regenerating title
                 </span>
               ) : null}
-              {titleLineIcons}
+              <span aria-hidden className="ml-auto inline-flex shrink-0 items-center gap-1">
+                {remoteMachineIcon}
+                <SidebarProviderStack
+                  thread={thread}
+                  providerEntryByInstanceId={props.providerEntryByInstanceId}
+                />
+              </span>
             </div>
             {metaLine}
           </div>

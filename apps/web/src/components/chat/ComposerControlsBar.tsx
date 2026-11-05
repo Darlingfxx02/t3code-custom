@@ -31,9 +31,8 @@ import type { useComposerProviderModel } from "./useComposerProviderModel";
 import { resolveComposerControlsOwnership } from "./composerControlsOwnership";
 
 /**
- * The composer footer controls: the model picker (which also holds effort, speed and
- * permissions), mode controls and the overflow menu for blocks that do not fit. Rendered in the
- * expanded footer or the resting controls host.
+ * The composer footer controls: the model picker, mode controls and the overflow menu for
+ * permissions and blocks that do not fit. Rendered in the expanded footer or resting controls host.
  */
 // Model and effort share one trigger; it stays filled while its popup is open.
 const MODEL_TRIGGER_STATES = "data-popup-open:bg-accent data-popup-open:text-foreground";
@@ -144,7 +143,7 @@ export function ComposerControlsBar(props: {
     hiddenBlockCount: restingHiddenBlockCount,
     hiddenBlockIds: hiddenRestingBlockIds,
     overflowShowsPermissions,
-    pickerOwnsModeShortcut,
+    showOverflow,
   } = resolveComposerControlsOwnership({
     matchesDefault: accessMatchesDefault || props.permissionsShownInStrip,
     planModeUiEnabled,
@@ -224,9 +223,7 @@ export function ComposerControlsBar(props: {
       )}
       triggerSuffix={effort.suffix}
       triggerDetail={effort.detail}
-      triggerShortcuts={
-        pickerOwnsModeShortcut ? "composer.effort composer.mode" : "composer.effort"
-      }
+      triggerShortcuts="composer.effort"
       effortColumn={<ComposerEffortColumn traits={traitsInput} />}
       footer={
         <ComposerPickerFooter
@@ -295,11 +292,12 @@ export function ComposerControlsBar(props: {
         })}
         <div
           data-resting-controls-overflow
-          aria-hidden={hiddenRestingBlockIds.length === 0 || undefined}
-          inert={hiddenRestingBlockIds.length === 0 || undefined}
+          data-resting-controls-overflow-persistent={accessDisplay === "hidden" || undefined}
+          aria-hidden={!showOverflow || undefined}
+          inert={!showOverflow || undefined}
           className={cn(
             "min-w-0 shrink-0",
-            hiddenRestingBlockIds.length === 0 && "pointer-events-none invisible absolute",
+            !showOverflow && "pointer-events-none invisible absolute",
           )}
         >
           <CompactComposerControlsMenu
@@ -307,9 +305,8 @@ export function ComposerControlsBar(props: {
             runtimeMode={compatibleRuntimeMode}
             runtimeModeOptions={compatibleRuntimeModeOptions}
             size={controlSize}
-            hidden={composerControlsHidden || hiddenRestingBlockIds.length === 0}
+            hidden={composerControlsHidden || !showOverflow}
             showInteractionModeToggle={planModeUiEnabled && hiddenRestingBlockIds.length > 0}
-            // Permissions join the overflow only when their normal home is in it.
             showPermissions={overflowShowsPermissions}
             onToggleInteractionMode={toggleInteractionMode}
             onRuntimeModeChange={handleRuntimeModeChange}

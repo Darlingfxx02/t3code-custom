@@ -63,6 +63,7 @@ import {
   type MessageId,
   type ModelSelection,
   type PreviewAnnotationPayload,
+  type RunId,
   ProviderInstanceId,
   type ServerProvider,
   type ScopedThreadRef,
@@ -2090,6 +2091,67 @@ export default function ChatView(props: ChatViewProps) {
     return result;
   };
 
+  const retryProviderError = async (runId: RunId) => {
+    if (
+      !activeThread ||
+      !serverProjection ||
+      !isServerThread ||
+      isSendBusy ||
+      isRevertingCheckpoint ||
+      threadDetailLoading ||
+      activeEnvironmentUnavailable
+    ) {
+      return;
+    }
+    const sourceRun = serverProjection.runs.find((run) => run.id === runId);
+    if (!sourceRun || sourceRun.status !== "failed") return;
+    const sourceMessage = serverProjection.messages.find(
+      (message) => message.id === sourceRun.userMessageId,
+    );
+    if (!sourceMessage || sourceMessage.role !== "user") return;
+    setThreadError(activeThread.id, null);
+    const settingsResult = await persistThreadSettingsForNextTurn({
+      threadId: activeThread.id,
+      createdAt: new Date().toISOString(),
+      runtimeMode,
+      interactionMode,
+    });
+    if (settingsResult._tag === "Failure") {
+      if (!isAtomCommandInterrupted(settingsResult)) {
+        const error = squashAtomCommandFailure(settingsResult);
+        setThreadError(
+          activeThread.id,
+          error instanceof Error ? error.message : "Could not retry the request.",
+        );
+      }
+      return;
+    }
+    const result = await startThreadTurn({
+      environmentId,
+      input: {
+        threadId: activeThread.id,
+        message: {
+          messageId: newMessageId(),
+          role: "user",
+          text: sourceMessage.text,
+          attachments: sourceMessage.attachments,
+          ...(sourceMessage.context === undefined ? {} : { context: sourceMessage.context }),
+        },
+        modelSelection: sourceRun.modelSelection,
+        runtimeMode,
+        interactionMode,
+        dispatchMode: "start",
+      },
+    });
+    if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+      const error = squashAtomCommandFailure(result);
+      setThreadError(
+        activeThread.id,
+        error instanceof Error ? error.message : "Could not retry the request.",
+      );
+    }
+  };
+
   const {
     showScrollToBottom,
     timelineLiveFollowEnabled,
@@ -3461,6 +3523,7 @@ export default function ChatView(props: ChatViewProps) {
                   onRevertToTurnCount={onRevertTimelineTurnStable}
                   onUseArtifactTemplate={insertArtifactTemplateStable}
                   onSendAppMessage={sendAppMessageStable}
+                  onRetryProviderError={retryProviderError}
                   isRevertingCheckpoint={isRevertingCheckpoint}
                   onImageExpand={onExpandTimelineImageStable}
                   onFileOpen={openFileAttachmentStable}
@@ -3513,7 +3576,7 @@ export default function ChatView(props: ChatViewProps) {
               <div ref={draftHeroTransitionGroupRef} className="chat-composer-lane w-full">
                 <div
                   data-chat-composer-stack="true"
-                  className="group/composer-stack pointer-events-auto relative z-10 mx-auto w-full max-w-(--chat-content-max-width)"
+                  className="group/composer-stack pointer-events-auto relative z-10 mx-auto w-full max-w-(--chat-content-max-width) sm:mx-[-1rem] sm:w-[calc(100%+2rem)] sm:max-w-[calc(var(--chat-content-max-width)+2rem)]"
                 >
                   {isDraftHeroState ? (
                     <div className="absolute inset-x-0 bottom-full">

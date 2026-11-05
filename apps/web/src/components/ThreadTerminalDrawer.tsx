@@ -1374,8 +1374,8 @@ function TerminalSidebarGroup({
           type="button"
           className={`flex h-[22px] w-full cursor-pointer items-center gap-1 rounded px-1.5 text-2xs ${
             isGroupActive
-              ? "bg-accent/50 text-foreground"
-              : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+              ? "bg-interactive-row-active text-foreground"
+              : "text-muted-foreground hover:bg-interactive-row-hover hover:text-foreground"
           }`}
           onClick={() => onActiveTerminalChange(groupActiveTerminalId)}
         >
@@ -1398,8 +1398,8 @@ function TerminalSidebarGroup({
               className={cn(
                 "group/tab flex h-6 w-full items-center gap-0.5 rounded-md pr-2 pl-1.5 text-xs",
                 isActive
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                  ? "bg-interactive-row-active text-foreground"
+                  : "text-muted-foreground hover:bg-interactive-row-hover hover:text-foreground",
               )}
             >
               {canOperateTerminal ? (

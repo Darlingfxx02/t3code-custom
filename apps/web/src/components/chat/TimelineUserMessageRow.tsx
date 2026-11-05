@@ -90,10 +90,15 @@ import {
   resolvePreviewAnnotationImage,
   userMessageFileLabel,
 } from "./TimelineUserMessageRow.logic";
+import {
+  ResourceAttachmentCard,
+  resourceAttachmentKindForFileName,
+} from "./ResourceAttachmentCard";
 
 // Drawn inside the media so dark screenshots keep an edge on the dark background.
 const MEDIA_EDGE_CLASS_NAME =
   "relative after:pointer-events-none after:absolute after:inset-0 after:z-10 after:rounded-[inherit] after:ring-1 after:ring-inset after:ring-black/9 dark:after:ring-white/12";
+const USER_MESSAGE_MEDIA_WIDTH_CLASS_NAME = "w-72 max-w-full";
 
 const BUBBLE_CHIP_CLASS_NAME =
   "[&_[data-slot=context-chip]]:[--context-chip-ink:var(--context-chip-message,var(--context-chip-accent))]";
@@ -106,6 +111,18 @@ function UserFileCard({
   readonly copyMarkdown: string | undefined;
 }) {
   const ctx = use(TimelineRowCtx);
+  const resourceKind = resourceAttachmentKindForFileName(file.name);
+  if (resourceKind) {
+    return (
+      <ResourceAttachmentCard
+        file={file}
+        kind={resourceKind}
+        copyMarkdown={copyMarkdown}
+        onOpen={() => ctx.onFileOpen(file)}
+        onDownload={() => ctx.onFileDownload(file)}
+      />
+    );
+  }
   const pastedText = file.source?._tag === "pasted-text";
   const label = userMessageFileLabel(file);
   const extension = /\.([a-z0-9]{1,8})$/i.exec(file.name)?.[1]?.toUpperCase() ?? "File";
@@ -134,7 +151,7 @@ function UserFileCard({
   return (
     <div
       data-markdown-copy={copyMarkdown}
-      className="flex w-64 max-w-full items-center gap-1 rounded-2xl bg-message py-2 ps-2 pe-1 text-message-foreground"
+      className="flex w-56 max-w-full items-center gap-1 rounded-2xl bg-message py-2 ps-2 pe-1 text-message-foreground"
     >
       {file.downloadable === false ? (
         <>
@@ -664,11 +681,12 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
           !standaloneMedia
             ? "mb-2 max-w-[210px] grid-cols-2 gap-2"
             : loneImage
-              ? "max-w-full"
+              ? USER_MESSAGE_MEDIA_WIDTH_CLASS_NAME
               : collage
                 ? cn(
                     MEDIA_EDGE_CLASS_NAME,
-                    "w-80 max-w-full gap-px overflow-hidden rounded-2xl bg-black/9 dark:bg-white/12",
+                    USER_MESSAGE_MEDIA_WIDTH_CLASS_NAME,
+                    "gap-px overflow-hidden rounded-2xl bg-black/9 dark:bg-white/12",
                     mediaCornerClassName,
                     regularImages.length === 2
                       ? "auto-rows-[12rem] grid-cols-2"
@@ -677,8 +695,8 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
                         : "auto-rows-[6rem] grid-cols-2",
                   )
                 : regularImages.length + userVideos.length === 1
-                  ? "w-80 max-w-full"
-                  : "w-80 max-w-full grid-cols-2 gap-2",
+                  ? USER_MESSAGE_MEDIA_WIDTH_CLASS_NAME
+                  : cn(USER_MESSAGE_MEDIA_WIDTH_CLASS_NAME, "grid-cols-2 gap-2"),
         )}
       >
         {regularImages.map((image, index) => (
@@ -735,9 +753,9 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
                   className={cn(
                     "block transform-gpu",
                     standaloneMedia && image.source?.kind === "snap-shot"
-                      ? "h-auto max-h-48 w-auto min-w-24 max-w-full object-contain"
+                      ? "h-auto max-h-40 w-auto min-w-24 max-w-full object-contain"
                       : loneImage
-                        ? "h-48 w-auto min-w-24 max-w-full object-cover"
+                        ? "h-40 w-auto min-w-24 max-w-full object-cover"
                         : "size-full object-cover",
                   )}
                 />
@@ -746,7 +764,7 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
               <div
                 className={cn(
                   "flex min-h-[72px] items-center justify-center px-2 py-3 text-center text-2xs text-muted-foreground/70",
-                  loneImage && "h-48 w-64 max-w-full",
+                  loneImage && "h-40 w-56 max-w-full",
                   collage && "h-full",
                 )}
               >
@@ -934,6 +952,23 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
             {!fileCardsOnly && (unchippedFiles.length > 0 || unknownAttachments.length > 0) ? (
               <div className="mb-2 flex flex-col gap-1">
                 {unchippedFiles.map((file) => {
+                  const resourceKind = resourceAttachmentKindForFileName(file.name);
+                  if (resourceKind) {
+                    return (
+                      <ResourceAttachmentCard
+                        key={file.id}
+                        file={file}
+                        kind={resourceKind}
+                        copyMarkdown={
+                          attachmentReferences.find(
+                            (reference) => reference.attachmentId === file.id,
+                          )?.source
+                        }
+                        onOpen={() => onFileOpen(file)}
+                        onDownload={() => ctx.onFileDownload(file)}
+                      />
+                    );
+                  }
                   const pastedText = file.source?._tag === "pasted-text";
                   const label = userMessageFileLabel(file);
                   const fileIdentity = (

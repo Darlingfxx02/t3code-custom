@@ -1035,7 +1035,7 @@ export function ProviderInstanceCard({
             </p>
           ) : null}
           {onRunVersionAction && updateCommand ? (
-            <div className="flex items-center gap-2 text-3xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center gap-2 text-3xs font-medium tracking-wider text-muted-foreground">
               <span aria-hidden className="h-px flex-1 bg-border" />
               or, update manually using
               <span aria-hidden className="h-px flex-1 bg-border" />
