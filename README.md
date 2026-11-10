@@ -1,3 +1,21 @@
+# T3 Code Classic
+
+Оригинальная структура T3 Code: один левый сайдбар, тема Codex и небольшие доработки интерфейса. Отдельной иконочной панели слева нет.
+
+**[Скачать приложение для macOS и Windows](https://github.com/Darlingfxx02/t3code-custom/releases/latest)**
+
+- macOS Apple Silicon (M1 и новее): файл `.dmg`. Откройте и перенесите приложение в Applications.
+- Windows x64: установщик `.exe`.
+- Другая версия: [T3 Codex](https://github.com/Darlingfxx02/t3code-codex).
+
+Это независимая пользовательская сборка [T3 Code](https://github.com/pingdotgg/t3code), а не официальный релиз. Аккаунты и подписки провайдеров подключаются пользователем; ключей и личных данных в сборке нет.
+
+Сборки не подписаны Developer ID/Windows Authenticode. При первом открытии macOS/Windows могут потребовать разрешить запуск. Обе версии сохраняют исходное имя приложения и каталог данных T3 Code, поэтому устанавливайте выбранную версию и делайте резервную копию перед переключением.
+
+Исходный снимок: `47739931901f061c88aa2a66ba65ee03b7e6a505`. Для повторной сборки откройте Actions → Build personal desktop releases → Run workflow и укажите версию. Workflow собирает macOS/Windows и проверяет запуск с отдельной тестовой базой; готовые установщики появляются в артефактах запуска. Публикация в Releases выполняется отдельно после проверки.
+
+---
+
 # T3 Code
 
 T3 Code is an "agent harness control surface". It enables control of the agents on your machine with a best-in-class mobile app ([iOS](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824), [Android](https://play.google.com/store/apps/details?id=com.t3tools.t3code)), [web app](https://app.t3.codes) and [Electron-based desktop app](https://t3.codes).
